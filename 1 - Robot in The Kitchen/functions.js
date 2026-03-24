@@ -15,6 +15,8 @@ export function createKitchen(scene, renderer, camera, gui) {
         const floorplane = new THREE.Mesh( floorgeometry, floormaterial );
         scene.add(floorplane);
 
+        floorplane.receiveShadow = true;
+
         //creating behind wall to join with floor
         var wallgeometry = new THREE.PlaneGeometry( 3, 3);
         var wallmaterial = new THREE.MeshStandardMaterial( { map: walltexture, side: THREE.DoubleSide } );
@@ -45,6 +47,8 @@ export function createKitchen(scene, renderer, camera, gui) {
         counter.position.x = -0.5;
         counter.position.y = 1.25;
         counter.position.z = 0.25;
+        counter.castShadow = true;
+        counter.receiveShadow = true;
         scene.add(counter);
         
 
@@ -55,6 +59,7 @@ export function createKitchen(scene, renderer, camera, gui) {
         stove.position.z = 0.55;
         stove.position.y = 1.25;
         stove.position.x = -1;
+        stove.castShadow = true;
         scene.add(stove);
 
         var plategeometry = new THREE.CylinderGeometry(0.15, 0.05, 0.05, 32);
@@ -66,6 +71,7 @@ export function createKitchen(scene, renderer, camera, gui) {
         plate.position.x = -0.5;
         plate.receiveShadow = true;
         plate.castShadow = true;
+
         scene.add(plate);
 
         var cupgeometry = new THREE.CylinderGeometry(0.05, 0.01, 0.05, 32);
@@ -77,35 +83,10 @@ export function createKitchen(scene, renderer, camera, gui) {
         cup.position.x = -0.25;
         cup.receiveShadow = true;
         cup.castShadow = true;
+
         scene.add(cup);
 
-        // White directional light at half intensity shining from the top.
-        const light = new THREE.DirectionalLight( 0xffffff, 3 );
-        light.position.set(15,-15,5);
-        light.shadow.camera.near = 0.1;
-        light.shadow.camera.far = 100;
-        light.castShadow = true;
-        scene.add( light );
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1);
-        scene.add(ambientLight);
-
-        light.castShadow = true;
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-
-        camera.position.z = 5; 
-
-      const lightFolder = gui.addFolder('Directional Light');
-        lightFolder.add(light, 'intensity', 0, 5);
-        lightFolder.add(light.position, 'x', -20, 20);
-        lightFolder.add(light.position, 'y', -20, 20);
-        lightFolder.add(light.position, 'z', -20, 20);
-      
-      const ambientLightFolder = gui.addFolder('Ambient Light');
-        ambientLightFolder.add(ambientLight, 'intensity', 0, 5);
-
+        
 }
 
 export function createRobot(scene, renderer, camera, gui){
@@ -119,11 +100,21 @@ export function createRobot(scene, renderer, camera, gui){
 //         var robotbellymaterial = new THREE.MeshStandardMaterial( { map: bellytexture} );
 //         const robotbelly = new THREE.Mesh( robotbellygeometry, robotbellymaterial );
 //         scene.add(robotbelly);
+
+    const robotGroup = new THREE.Group();
+    scene.add(robotGroup);
+
+    
         
     var robotgeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
       var material = new THREE.MeshStandardMaterial({ map: bellytexture });
       var cube = new THREE.Mesh(robotgeometry, material);
-      scene.add(cube);
+
+    robotGroup.add(cube);
+    robotGroup.position.y = 0.5;
+    robotGroup.position.z = 1.0;
+    robotGroup.rotation.x = Math.PI / 2;
+    
 
     var neckgeometry = new THREE.CylinderGeometry(0.1, 0.05, 0.2, 32);
       var neckmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });
@@ -158,6 +149,9 @@ export function createRobot(scene, renderer, camera, gui){
     robotshoulderright.position.set(0, 0, 0);
     robotshoulderright.name = 'RightShoulder';
 
+    const shoulderAxes = new THREE.AxesHelper(0.2);
+    robotshoulderright.add(shoulderAxes);
+
    
     const robotarmright = new THREE.Mesh(
     new THREE.CylinderGeometry(0.05, 0.05, 0.2, 32),
@@ -174,6 +168,9 @@ export function createRobot(scene, renderer, camera, gui){
     robotelbowright.position.set(0, -0.1, 0); // relative to arm
     robotarmright.add(robotelbowright);
 
+    const elbowAxes = new THREE.AxesHelper(0.15);
+    robotelbowright.add(elbowAxes);
+
     //right forearm
     var robotforearmrightgeometry = new THREE.CylinderGeometry(0.025, 0.05, 0.2, 32);
         var robotforearmrightmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });
@@ -183,6 +180,9 @@ export function createRobot(scene, renderer, camera, gui){
         robotforearmright.position.z = 0;
         //robotforearmright.rotation.z = Math.PI / 3;
         robotelbowright.add(robotforearmright);
+
+    const forearmAxes = new THREE.AxesHelper(0.15);
+    robotforearmright.add(forearmAxes);
 
     //gripper
     
@@ -251,12 +251,6 @@ export function createRobot(scene, renderer, camera, gui){
         robotleftgripper.position.y = -0.1;
         robotforearmleft.add(robotleftgripper);
 
-    
-
-
-    
-    
-
 
 
     var robotleggeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.7, 32);
@@ -276,6 +270,14 @@ export function createRobot(scene, renderer, camera, gui){
         cube.add(robotleg2);
 
     
+    
+
+    robotGroup.traverse((obj) => {
+    if (obj.isMesh) {
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+    }
+    });
     
     
 
@@ -297,9 +299,7 @@ export function createRobot(scene, renderer, camera, gui){
 
         };
 
-    
 
-       
     
 }
 
