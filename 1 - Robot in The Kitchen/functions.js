@@ -299,10 +299,15 @@ export function createRobot(scene, renderer, camera, gui){
 
         };
 
-
-    
 }
 
+export function animateRobotJoints(robot) {
+    const time = Date.now() * 0.002; 
+    robot.rightShoulder.rotation.z = Math.sin(time) * Math.PI / 4;   
+    robot.rightElbow.rotation.z = Math.sin(time * 1.5) * Math.PI / 6;
+    robot.leftShoulder.rotation.z = -Math.sin(time) * Math.PI / 4;
+    robot.leftElbow.rotation.z = -Math.sin(time * 1.5) * Math.PI / 6;
+}
 
 
 // //left shoulder and arm
