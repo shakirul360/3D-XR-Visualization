@@ -137,40 +137,112 @@ export function createRobot(scene, renderer, camera, gui){
       robothead.position.y = 0.55;
       cube.add(robothead);
     
-    //left shoulder and arm
-      var robotshouldergeometry = new THREE.SphereGeometry(0.1, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2)
-        var robotshouldermaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });   
-        var robotshoulderleft = new THREE.Mesh(robotshouldergeometry, robotshouldermaterial);
-        robotshoulderleft.rotation.z = Math.PI / 3;
-        robotshoulderleft.position.x = 0.3;
-        robotshoulderleft.position.y = 0.1;
-        cube.add(robotshoulderleft);
-
-    var robotarmleftgeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.2, 32);
-        var robotarmleftmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });   
-        var robotarmleft = new THREE.Mesh(robotarmleftgeometry, robotarmleftmaterial);
-        //robotarmleft.rotation.z = -Math.PI / 12;
-        robotarmleft.position.x = 0;
-        robotarmleft.position.y = -0.1;
-        //robotarmleft.position.y = 0.15;
-        robotshoulderleft.add(robotarmleft);
     
-        var robotelbowleftgeometry = new THREE.SphereGeometry(0.05, 32, 32);
-        var robotelbowleftmaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
-        var robotelbowleft = new THREE.Mesh(robotelbowleftgeometry, robotelbowleftmaterial); 
-        robotelbowleft.position.x = -0.5;
-        robotelbowleft.position.y = 0.75;
-        robotelbowleft.rotation.z = -Math.PI / 3;
-        robotarmleft.add(robotelbowleft);
+    //right arm group - > groups allow us to move the shoulder and arm together without having to worry about the position of the shoulder and arm separately
+    const rightArmGroup = new THREE.Group();
+        rightArmGroup.position.set(-0.3, 0.1, 0); // shoulder position
+        cube.add(rightArmGroup);
+    rightArmGroup.name = 'RightArmGroup';
 
+
+    //right shoulder and arm
+    var robotshoulder2geometry = new THREE.SphereGeometry(0.1, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2)
+        var robotshoulder2material = new THREE.MeshStandardMaterial({ color: 0x000000 });   
+        var robotshoulderright = new THREE.Mesh(robotshoulder2geometry, robotshoulder2material);
+        robotshoulderright.rotation.z = -Math.PI / 3;
+        // robotshoulderright.position.x = -0.3;
+        // robotshoulderright.position.y = 0.1; -> x,y not required when using group
+        //cube.add(robotshoulderright);
+
+    rightArmGroup.add(robotshoulderright);
+    robotshoulderright.position.set(0, 0, 0);
+    robotshoulderright.name = 'RightShoulder';
+
+   
+    const robotarmright = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.05, 0.2, 32),
+    new THREE.MeshStandardMaterial({ map: bellytexture })
+    );
+    robotarmright.position.set(0, -0.1, 0);  // relative to shoulder
+    robotshoulderright.add(robotarmright);
+
+    // //right elbow
+    const robotelbowright = new THREE.Mesh(
+    new THREE.SphereGeometry(0.05, 32, 32),
+    new THREE.MeshStandardMaterial({ color: 0x000000 })
+    );
+    robotelbowright.position.set(0, -0.1, 0); // relative to arm
+    robotarmright.add(robotelbowright);
+
+    //right forearm
+    var robotforearmrightgeometry = new THREE.CylinderGeometry(0.025, 0.05, 0.2, 32);
+        var robotforearmrightmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });
+        var robotforearmright = new THREE.Mesh(robotforearmrightgeometry, robotforearmrightmaterial);
+        robotforearmright.position.x = 0;
+        robotforearmright.position.y = -0.1;
+        robotforearmright.position.z = 0;
+        //robotforearmright.rotation.z = Math.PI / 3;
+        robotelbowright.add(robotforearmright);
+
+    //gripper
+    
+    var robotrightgrippergeometry = new THREE.SphereGeometry(0.05, 32);
+        var robotrightgrippermaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+        var robotrightgripper = new THREE.Mesh(robotrightgrippergeometry, robotrightgrippermaterial);
+        robotrightgripper.rotation.z = Math.PI / 3;
+        robotrightgripper.position.x = 0;
+        robotrightgripper.position.y = -0.1;
+        robotforearmright.add(robotrightgripper);
+    
+    
+    //left arm group
+    const leftArmGroup = new THREE.Group();
+        leftArmGroup.position.set(0.3, 0.1, 0);
+        cube.add(leftArmGroup);
+    leftArmGroup.name = 'LeftArmGroup';
+
+    //left shoulder and arm
+    var robotshoulderleftgeometry = new THREE.SphereGeometry(0.1, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2)
+        var robotshoulder2material = new THREE.MeshStandardMaterial({ color: 0x000000 });   
+        var robotshoulderleft = new THREE.Mesh(robotshoulderleftgeometry, robotshoulder2material);
+        robotshoulderleft.rotation.z = Math.PI / 3;
+        // robotshoulderleft.position.x = 0.3;
+        // robotshoulderleft.position.y = 0.1; -> x,y not required when using group
+        //cube.add(robotshoulderleft);
+
+    leftArmGroup.add(robotshoulderleft);
+    robotshoulderleft.position.set(0, 0, 0);
+    robotshoulderleft.name = 'LeftShoulder';
+
+    //left arm
+    const robotarmleft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.05, 0.2, 32),
+    new THREE.MeshStandardMaterial({ map: bellytexture })
+    );
+    robotarmleft.position.set(0, -0.1, 0);  // relative to shoulder
+    robotshoulderleft.add(robotarmleft);
+
+    //left elbow
+    const robotelbowleft = new THREE.Mesh(
+    new THREE.SphereGeometry(0.05, 32, 32),
+    new THREE.MeshStandardMaterial({ color: 0x000000 })
+    );
+    robotelbowleft.position.set(0, -0.1, 0); // relative to arm
+    robotarmleft.add(robotelbowleft);
+
+
+    //left forearm
     var robotforearmleftgeometry = new THREE.CylinderGeometry(0.025, 0.05, 0.2, 32);
         var robotforearmleftmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });
         var robotforearmleft = new THREE.Mesh(robotforearmleftgeometry, robotforearmleftmaterial);
-        robotforearmleft.rotation.z = -Math.PI / 3;
-        robotforearmleft.position.x = -0.1;
-        robotforearmleft.position.y = -0.05;
+        robotforearmleft.position.x = 0;
+        robotforearmleft.position.y = -0.1;
+        robotforearmleft.position.z = 0;
+        //robotforearmleft.rotation.z = Math.PI / 3;
         robotelbowleft.add(robotforearmleft);
 
+    //gripper
+    
     var robotleftgrippergeometry = new THREE.SphereGeometry(0.05, 32);
         var robotleftgrippermaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
         var robotleftgripper = new THREE.Mesh(robotleftgrippergeometry, robotleftgrippermaterial);
@@ -179,48 +251,12 @@ export function createRobot(scene, renderer, camera, gui){
         robotleftgripper.position.y = -0.1;
         robotforearmleft.add(robotleftgripper);
 
-    //right shoulder and arm
-    var robotshoulder2geometry = new THREE.SphereGeometry(0.1, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2)
-        var robotshoulder2material = new THREE.MeshStandardMaterial({ color: 0x000000 });   
-        var robotshoulderright = new THREE.Mesh(robotshoulder2geometry, robotshoulder2material);
-        robotshoulderright.rotation.z = -Math.PI / 3;
-        robotshoulderright.position.x = -0.3;
-        robotshoulderright.position.y = 0.1;
-        cube.add(robotshoulderright);
     
-    var robotarmrightgeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.2, 32);
-        var robotarmrightmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });   
-        var robotarmright = new THREE.Mesh(robotarmrightgeometry, robotarmrightmaterial);
-        //robotarmright.rotation.z = -Math.PI / 3;
-        robotarmright.position.x = 0;
-        robotarmright.position.y = -0.1;
-        robotshoulderright.add(robotarmright);
-
-    var robotelbowrightgeometry = new THREE.SphereGeometry(0.05, 32, 32);
-        var robotelbowrightmaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
-        var robotelbowright = new THREE.Mesh(robotelbowrightgeometry, robotelbowrightmaterial);
-        robotelbowright.position.x = 0.5;
-        robotelbowright.position.y = 0.75;
-        robotelbowright.rotation.z = Math.PI / 3;
-        robotarmright.add(robotelbowright);
 
 
-    var robotforearmrightgeometry = new THREE.CylinderGeometry(0.025, 0.05, 0.2, 32);
-        var robotforearmrightmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });
-        var robotforearmright = new THREE.Mesh(robotforearmrightgeometry, robotforearmrightmaterial);
-        robotforearmright.rotation.z = Math.PI / 3;
-        robotforearmright.position.x = 0.1;
-        robotforearmright.position.y = -0.05;
-        robotelbowright.add(robotforearmright);
+    
+    
 
-
-    var robotrightgrippergeometry = new THREE.SphereGeometry(0.05, 32);
-        var robotrightgrippermaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
-        var robotrightgripper = new THREE.Mesh(robotrightgrippergeometry, robotrightgrippermaterial);
-        robotrightgripper.rotation.z = Math.PI / 3;
-        robotrightgripper.position.x = 0;
-        robotrightgripper.position.y = -0.1;
-        robotforearmright.add(robotrightgripper);
 
 
     var robotleggeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.7, 32);
@@ -241,11 +277,120 @@ export function createRobot(scene, renderer, camera, gui){
 
     
     
+    
 
-     
+     return {
+        
+        leftArmGroup: leftArmGroup,
+        leftShoulder: robotshoulderleft,
+        leftArm: robotarmleft,
+        leftElbow: robotelbowleft,
+        leftforeArm: robotforearmleft,
+        leftGripper: robotleftgripper,
+        rightArmGroup: rightArmGroup,
+        rightShoulder: robotshoulderright,
+        rightArm: robotarmright,
+        rightElbow: robotelbowright,
+        rightforeArm: robotforearmright,
+        rightGripper: robotrightgripper,
+        
+
+        };
 
     
 
        
     
 }
+
+
+
+// //left shoulder and arm
+//       var robotleftshouldergeometry = new THREE.SphereGeometry(0.1, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2)
+//         var robotshouldermaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });   
+//         var robotshoulderleft = new THREE.Mesh(robotleftshouldergeometry, robotshouldermaterial);
+//         robotshoulderleft.rotation.z = Math.PI / 3;
+//         robotshoulderleft.position.x = 0.3;
+//         robotshoulderleft.position.y = 0.1;
+//         cube.add(robotshoulderleft);
+
+//     var robotarmleftgeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.2, 32);
+//         var robotarmleftmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });   
+//         var robotarmleft = new THREE.Mesh(robotarmleftgeometry, robotarmleftmaterial);
+//         //robotarmleft.rotation.z = -Math.PI / 12;
+//         robotarmleft.position.x = 0;
+//         robotarmleft.position.y = -0.1;
+//         //robotarmleft.position.y = 0.15;
+//         robotshoulderleft.add(robotarmleft);
+    
+        // var robotelbowleftgeometry = new THREE.SphereGeometry(0.05, 32, 32);
+        // var robotelbowleftmaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+        // var robotelbowleft = new THREE.Mesh(robotelbowleftgeometry, robotelbowleftmaterial); 
+        // robotelbowleft.position.x = -0.5;
+        // robotelbowleft.position.y = 0.75;
+        // robotelbowleft.rotation.z = -Math.PI / 3;
+        // robotarmleft.add(robotelbowleft);
+
+//         //problem^
+
+//     var robotforearmleftgeometry = new THREE.CylinderGeometry(0.025, 0.05, 0.2, 32);
+//         var robotforearmleftmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });
+//         var robotforearmleft = new THREE.Mesh(robotforearmleftgeometry, robotforearmleftmaterial);
+//         robotforearmleft.rotation.z = -Math.PI / 3;
+//         robotforearmleft.position.x = -0.1;
+//         robotforearmleft.position.y = -0.05;
+//         robotelbowleft.add(robotforearmleft);
+
+//     var robotleftgrippergeometry = new THREE.SphereGeometry(0.05, 32);
+//         var robotleftgrippermaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+//         var robotleftgripper = new THREE.Mesh(robotleftgrippergeometry, robotleftgrippermaterial);
+//         robotleftgripper.rotation.z = -Math.PI / 3;
+//         robotleftgripper.position.x = 0;
+//         robotleftgripper.position.y = -0.1;
+//         robotforearmleft.add(robotleftgripper);
+
+//     //right shoulder and arm
+//     var robotshoulder2geometry = new THREE.SphereGeometry(0.1, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2)
+//         var robotshoulder2material = new THREE.MeshStandardMaterial({ color: 0x000000 });   
+//         var robotshoulderright = new THREE.Mesh(robotshoulder2geometry, robotshoulder2material);
+//         robotshoulderright.rotation.z = -Math.PI / 3;
+//         robotshoulderright.position.x = -0.3;
+//         robotshoulderright.position.y = 0.1;
+//         cube.add(robotshoulderright);
+    
+//     var robotarmrightgeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.2, 32);
+//         var robotarmrightmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });   
+//         var robotarmright = new THREE.Mesh(robotarmrightgeometry, robotarmrightmaterial);
+//         //robotarmright.rotation.z = -Math.PI / 3;
+//         robotarmright.position.x = 0;
+//         robotarmright.position.y = -0.1;
+//         robotshoulderright.add(robotarmright);
+    
+
+//     var robotelbowrightgeometry = new THREE.SphereGeometry(0.05, 32, 32);
+//         var robotelbowrightmaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+//         var robotelbowright = new THREE.Mesh(robotelbowrightgeometry, robotelbowrightmaterial);
+//         robotelbowright.position.x = 0.5;
+//         robotelbowright.position.y = 0.75;
+//         robotelbowright.rotation.z = Math.PI / 3;
+//         robotarmright.add(robotelbowright);
+
+//     //problem^
+
+
+//     var robotforearmrightgeometry = new THREE.CylinderGeometry(0.025, 0.05, 0.2, 32);
+//         var robotforearmrightmaterial = new THREE.MeshStandardMaterial({ map: bellytexture });
+//         var robotforearmright = new THREE.Mesh(robotforearmrightgeometry, robotforearmrightmaterial);
+//         robotforearmright.rotation.z = Math.PI / 3;
+//         robotforearmright.position.x = 0.1;
+//         robotforearmright.position.y = -0.05;
+//         robotelbowright.add(robotforearmright);
+
+
+//     var robotrightgrippergeometry = new THREE.SphereGeometry(0.05, 32);
+//         var robotrightgrippermaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+//         var robotrightgripper = new THREE.Mesh(robotrightgrippergeometry, robotrightgrippermaterial);
+//         robotrightgripper.rotation.z = Math.PI / 3;
+//         robotrightgripper.position.x = 0;
+//         robotrightgripper.position.y = -0.1;
+//         robotforearmright.add(robotrightgripper);

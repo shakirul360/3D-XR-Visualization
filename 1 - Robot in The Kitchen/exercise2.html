@@ -68,7 +68,73 @@
 
       const gui = new GUI();
 
-      createRobot(scene, renderer, camera, gui); //exercise 2
+      //createRobot(scene, renderer, camera, gui); //exercise 2
+      const robot = createRobot(scene, renderer, camera, gui);
+
+    
+
+    
+    const params = {
+    // Left
+    leftArmGroup: 0,
+    leftShoulder: 0,
+    leftArm: 0,
+    leftElbow: 0,
+    leftForeArm: 0,
+    leftGripper: 0,
+
+    // right
+    rightArmGroup: 0,
+    rightShoulder: 0,
+    rightArm: 0,
+    rightElbow: 0,
+    rightForeArm: 0,
+    rightGripper: 0,
+  };
+
+  const leftFolder = gui.addFolder('Left Arm');
+  const rightFolder = gui.addFolder('Right Arm');
+
+  leftFolder.add(params, 'leftArmGroup', -Math.PI, Math.PI)
+  .name('Whole Arm')
+  .onChange(v => robot.leftArmGroup.rotation.z = v);
+
+  leftFolder.add(params, 'leftShoulder', -Math.PI, Math.PI)
+    .onChange(v => robot.leftShoulder.rotation.z = v);
+
+  leftFolder.add(params, 'leftArm', -Math.PI, Math.PI)
+    .onChange(v => robot.leftArm.rotation.x = v);
+
+  leftFolder.add(params, 'leftElbow', -Math.PI, Math.PI)
+    .onChange(v => robot.leftElbow.rotation.z = v);
+
+  leftFolder.add(params, 'leftForeArm', -Math.PI, Math.PI)
+    .onChange(v => robot.leftforeArm.rotation.x = v);
+
+  leftFolder.add(params, 'leftGripper', -Math.PI, Math.PI)
+    .onChange(v => robot.leftGripper.rotation.z = v);
+
+  
+
+    rightFolder.add(params, 'rightArmGroup', -Math.PI, Math.PI)
+  .name('Whole Arm')
+  .onChange(v => robot.rightArmGroup.rotation.z = v);
+
+  rightFolder.add(params, 'rightShoulder', -Math.PI, Math.PI)
+    .onChange(v => robot.rightShoulder.rotation.z = v);
+
+  rightFolder.add(params, 'rightArm', -Math.PI, Math.PI)
+    .onChange(v => robot.rightArm.rotation.x = v);
+
+  rightFolder.add(params, 'rightElbow', -Math.PI, Math.PI)
+    .onChange(v => robot.rightElbow.rotation.z = v);
+
+  rightFolder.add(params, 'rightForeArm', -Math.PI, Math.PI)
+    .onChange(v => robot.rightforeArm.rotation.x = v);
+
+  rightFolder.add(params, 'rightGripper', -Math.PI, Math.PI)
+    .onChange(v => robot.rightGripper.rotation.z = v);
+      
 
       camera.position.z = 5;
 
