@@ -1,0 +1,380 @@
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<style>body{margin:0;overflow:hidden;}</style>
+</head>
+<body>
+<div id="container"></div>
+
+<script id="vertexShader" type="x-shader/x-vertex">
+uniform sampler2D uTexture;
+uniform float pointSize;
+uniform int colorMode;
+varying vec3 vColor;
+
+const vec3 D65 = vec3(0.95047, 1.00000, 1.08883);
+const float PI = 3.14159265358979323846;
+
+vec3 rgb2hsv(vec3 c){
+    float cmax = max(c.r, max(c.g, c.b));
+    float cmin = min(c.r, min(c.g, c.b));
+    float delta = cmax - cmin;
+
+    float h = 0.0;
+    if(delta > 0.0){
+        if(cmax == c.r) h = mod(60.0 * ((c.g - c.b) / delta) + 360.0, 360.0);
+        else if(cmax == c.g) h = 60.0 * ((c.b - c.r) / delta + 2.0);
+        else h = 60.0 * ((c.r - c.g) / delta + 4.0);
+    }
+
+    float s = (cmax == 0.0) ? 0.0 : delta / cmax;
+    float v = cmax;
+    return vec3(h / 360.0, s, v);
+}
+
+vec3 srgbToLinear(vec3 c){
+    vec3 lowPart = c / 12.92;
+    vec3 highPart = pow((c + 0.055) / 1.055, vec3(2.4));
+    vec3 useHigh = step(vec3(0.04045), c);
+    return mix(lowPart, highPart, useHigh);
+}
+
+vec3 linearRgbToXyz(vec3 rgb){
+    mat3 M = mat3(
+        0.4124564, 0.2126729, 0.0193339,
+        0.3575761, 0.7151522, 0.1191920,
+        0.1804375, 0.0721750, 0.9503041
+    );
+    return M * rgb;
+}
+
+vec3 xyzToXyy(vec3 xyz){
+    float sum = xyz.x + xyz.y + xyz.z;
+    if(sum == 0.0) return vec3(0.0);
+    float x = xyz.x / sum;
+    float y = xyz.y / sum;
+    return vec3(x, y, xyz.y);
+}
+
+float lab_f(float t){
+    float delta = 6.0 / 29.0;
+    float delta3 = delta * delta * delta;
+    if(t > delta3){
+        return pow(t, 1.0 / 3.0);
+    } else {
+        return t / (3.0 * delta * delta) + 4.0 / 29.0;
+    }
+}
+
+vec3 xyzToLab(vec3 xyz){
+    float fx = lab_f(xyz.x / D65.x);
+    float fy = lab_f(xyz.y / D65.y);
+    float fz = lab_f(xyz.z / D65.z);
+
+    float L = 116.0 * fy - 16.0;
+    float a = 500.0 * (fx - fy);
+    float b = 200.0 * (fy - fz);
+
+    return vec3(L, a, b);
+}
+
+vec3 labToLch(vec3 lab){
+    float C = sqrt(lab.y * lab.y + lab.z * lab.z);
+    float h = atan(lab.z, lab.y); // [-pi, pi]
+    if(h < 0.0) h += 2.0 * PI;
+    return vec3(lab.x, C, h);
+}
+
+// --- visualization mappings into [0,1]^3 ---
+
+vec3 mapXYZ(vec3 xyz){
+    // XYZ usually lives roughly near 0..1 for typical normalized image data,
+    // but clamp just in case.
+    return clamp(xyz, 0.0, 1.0);
+}
+
+vec3 mapXYY(vec3 xyy){
+    // x and y are usually already in [0,1], Y is often in [0,1]
+    return clamp(xyy, 0.0, 1.0);
+}
+
+vec3 mapLAB(vec3 lab){
+    float L = clamp(lab.x / 100.0, 0.0, 1.0);
+    float a = clamp((lab.y + 128.0) / 255.0, 0.0, 1.0);
+    float b = clamp((lab.z + 128.0) / 255.0, 0.0, 1.0);
+    return vec3(L, a, b);
+}
+
+vec3 mapLCH(vec3 lch){
+    float L = clamp(lch.x / 100.0, 0.0, 1.0);
+    float C = clamp(lch.y / 150.0, 0.0, 1.0);
+    float h = clamp(lch.z / (2.0 * PI), 0.0, 1.0);
+    return vec3(L, C, h);
+}
+
+void main(){
+    vec2 uvCoord = uv;
+    vec3 color = texture2D(uTexture, uvCoord).rgb;
+    vColor = color;
+
+    vec3 linearRgb = srgbToLinear(color);
+    vec3 xyz = linearRgbToXyz(linearRgb);
+    vec3 lab = xyzToLab(xyz);
+
+    vec3 pos;
+
+    if (colorMode == 0) {
+        pos = color;                 // RGB
+    } else if (colorMode == 1) {
+        pos = rgb2hsv(color);        // HSV
+    } else if (colorMode == 2) {
+        pos = mapXYZ(xyz);           // XYZ
+    } else if (colorMode == 3) {
+        pos = mapXYY(xyzToXyy(xyz)); // xyY
+    } else if (colorMode == 4) {
+        pos = mapLAB(lab);           // LAB
+    } else {
+        pos = mapLCH(labToLch(lab)); // LCH
+    }
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+    gl_PointSize = pointSize;
+}
+</script>
+<!-- Fragment Shader -->
+<script id="fragmentShader" type="x-shader/x-fragment">
+varying vec3 vColor;
+
+void main() {
+    vec2 c = gl_PointCoord - vec2(0.5);
+    if (length(c) > 0.5) discard;
+    gl_FragColor = vec4(vColor, 1.0);
+}
+</script>
+
+<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.183.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.183.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.18.1/dist/lil-gui.esm.min.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+let container, scene, camera, renderer, controls, labelRenderer;
+let uniforms, mesh;
+let axisGroup = null;
+const startTime = Date.now();
+
+
+
+init();
+animate();
+
+function init(){
+    container = document.getElementById("container");
+    scene = new THREE.Scene();
+
+    axisGroup = new THREE.Group();
+    scene.add(axisGroup);
+
+    const box = new THREE.Box3(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(1, 1, 1)
+    );
+    const boxHelper = new THREE.Box3Helper(box, 0x666666);
+    scene.add(boxHelper);
+
+
+
+    // Lights
+    const light = new THREE.DirectionalLight(0xffffff,1);
+    light.position.set(1,2,2); scene.add(light);
+    scene.add(new THREE.AmbientLight(0x555555));
+
+    // // Axes helpers
+    // const axesRGB = new THREE.AxesHelper(1);
+    // const axesHSV = new THREE.AxesHelper(1);
+    // scene.add(axesRGB, axesHSV); axesHSV.visible=false;
+    // scene.userData.axesRGB=axesRGB; scene.userData.axesHSV=axesHSV;
+
+    const loader = new THREE.TextureLoader();
+    loader.load("summer.jpg", (texture) => {
+        const width = texture.image.width;
+        const height = texture.image.height;
+
+        const positions = [];
+        const uvs = [];
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                positions.push(0, 0, 0);
+                uvs.push((x + 0.5) / width, (y + 0.5) / height);
+            }
+        }
+
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+
+        uniforms = {
+            uTexture: { value: texture },
+            pointSize: { value: 1.2 },
+            colorMode: { value: 0 }
+        };
+
+        const material = new THREE.ShaderMaterial({
+            uniforms,
+            vertexShader: document.getElementById("vertexShader").textContent,
+            fragmentShader: document.getElementById("fragmentShader").textContent,
+            transparent: true,
+            depthTest: true,
+            depthWrite: false
+        });
+
+    mesh = new THREE.Points(geometry, material);
+    scene.add(mesh);
+
+    setColorSpace("RGB");
+    
+});
+
+
+
+    // Camera & renderer
+    renderer = new THREE.WebGLRenderer();
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = "absolute";
+    labelRenderer.domElement.style.top = "0px";
+    labelRenderer.domElement.style.pointerEvents = "none";
+    document.body.appendChild(labelRenderer.domElement);
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight,0.1,200);
+    camera.position.set(1.8, 1.2, 1.8);
+    camera.lookAt(0.5, 0.5, 0.5);
+
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0.5, 0.5, 0.5);
+    controls.update();
+
+    // GUI for color spaces
+    const gui = new GUI();
+    const params = { ColorSpace:"RGB" };
+    gui.add(params, "ColorSpace", ["RGB", "HSV", "XYZ", "xyY", "LAB", "LCH"]).onChange(setColorSpace);
+}
+
+function animate(){
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene,camera);
+    labelRenderer.render(scene, camera);
+}
+
+function createAxisLine(start, end, color) {
+    const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+    const material = new THREE.LineBasicMaterial({ color });
+    return new THREE.Line(geometry, material);
+}
+
+function createTextLabel(text, position) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    div.style.color = "white";
+    div.style.fontSize = "24px";
+    div.style.fontWeight = "bold";
+    div.style.fontFamily = "Arial";
+    div.style.textShadow = "0 0 4px black";
+
+    const label = new CSS2DObject(div);
+    label.position.copy(position);
+    return label;
+}
+
+function buildLabeledAxes(labels) {
+    // Remove all previous children from the existing group
+    while (axisGroup.children.length > 0) {
+        const child = axisGroup.children[0];
+        axisGroup.remove(child);
+    }
+
+    const origin = new THREE.Vector3(0, 0, 0);
+
+    const xAxis = createAxisLine(
+        origin,
+        new THREE.Vector3(1.1, 0, 0),
+        0xff0000
+    );
+
+    const yAxis = createAxisLine(
+        origin,
+        new THREE.Vector3(0, 1.1, 0),
+        0x00ff00
+    );
+
+    const zAxis = createAxisLine(
+        origin,
+        new THREE.Vector3(0, 0, 1.1),
+        0x0000ff
+    );
+
+    axisGroup.add(xAxis, yAxis, zAxis);
+
+    axisGroup.add(createTextLabel(labels[0], new THREE.Vector3(1.15, 0, 0)));
+    axisGroup.add(createTextLabel(labels[1], new THREE.Vector3(0, 1.15, 0)));
+    axisGroup.add(createTextLabel(labels[2], new THREE.Vector3(0, 0, 1.15)));
+
+    const grid = new THREE.GridHelper(1, 10, 0x444444, 0x444444);
+    grid.position.set(0.5, 0, 0.5);
+    axisGroup.add(grid);
+}
+
+function setColorSpace(modeName) {
+    if (!uniforms) return;
+
+    if (modeName === "RGB") {
+        uniforms.colorMode.value = 0;
+        buildLabeledAxes(["R", "G", "B"]);
+    } else if (modeName === "HSV") {
+        uniforms.colorMode.value = 1;
+        buildLabeledAxes(["H", "S", "V"]);
+    } else if (modeName === "XYZ") {
+        uniforms.colorMode.value = 2;
+        buildLabeledAxes(["X", "Y", "Z"]);
+    } else if (modeName === "xyY") {
+        uniforms.colorMode.value = 3;
+        buildLabeledAxes(["x", "y", "Y"]);
+    } else if (modeName === "LAB") {
+        uniforms.colorMode.value = 4;
+        buildLabeledAxes(["L*", "a*", "b*"]);
+    } else if (modeName === "LCH") {
+        uniforms.colorMode.value = 5;
+        buildLabeledAxes(["L*", "C*", "h"]);
+    }
+}
+
+window.addEventListener("resize", onWindowResize);
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+</script>
+</body>
+</html>

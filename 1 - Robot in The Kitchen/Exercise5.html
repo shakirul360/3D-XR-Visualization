@@ -46,7 +46,7 @@
 
     
     var scene = new THREE.Scene();
-    scene.position.z = -2; // move everything in front of the user
+    //scene.position.z = -2; // move everything in front of the user
 
     // Setting up camera
     var aspect = window.innerWidth / window.innerHeight;
@@ -212,7 +212,7 @@
 
   function render() {
     renderer.setAnimationLoop(() => {
-        animateRobotJoints(robot); // your existing animation
+        //animateRobotJoints(robot); // your existing animation
 
         // Direct Mapping: attach robot hands to controllers
         const leftPos = new THREE.Vector3();
@@ -230,8 +230,7 @@
     });
 }
 
-
-    
+   
       camera.position.z = 5;
 
       render();
