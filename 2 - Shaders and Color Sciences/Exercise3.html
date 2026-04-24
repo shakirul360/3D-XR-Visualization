@@ -314,37 +314,76 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.18.1/dist/lil-gui.esm.min.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
+// Special UI button helper from Three.js examples
+import { HTMLMesh } from "three/addons/interactive/HTMLMesh.js";
+import { InteractiveGroup } from "three/addons/interactive/InteractiveGroup.js";
+import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFactory.js";
 
 let container, scene, camera, renderer, controls;
-let uniforms, mesh;
+let uniforms, mesh, guiMesh;
 
 init();
-animate();
+//animate();
 
 function init() {
     container = document.getElementById("container");
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x666666);
 
+    const group = new InteractiveGroup();
+    scene.add(group);
+
+
+
+    const xrRoot = new THREE.Group();
+    scene.add(xrRoot);
+
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(1, 2, 2);
     scene.add(light);
     scene.add(new THREE.AmbientLight(0x555555));
+    
 
-    renderer = new THREE.WebGLRenderer();
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    renderer.xr.setReferenceSpaceType('local-floor');
+
+    const controller1 = renderer.xr.getController(0);
+    const controller2 = renderer.xr.getController(1);
+
+    group.listenToPointerEvents(renderer, camera);
+    group.listenToXRControllerEvents(controller1);
+    group.listenToXRControllerEvents(controller2);
+
+    scene.add(controller1);
+    scene.add(controller2);
+
+    renderer.xr.addEventListener('sessionstart', async () => {
+
+        const session = renderer.xr.getSession();
+        const referenceSpace = await session.requestReferenceSpace('local');
+
+        renderer.xr.setReferenceSpace(referenceSpace);
+    });
+
+    
+
+    document.body.appendChild( VRButton.createButton( renderer ) );
+
+    renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
 
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
-    camera.position.set(1.5, 1.2, 1.5);
+    camera.position.set(1, 0, 1);
+    //camera.rotation.y = Math.PI / 4;
 
     controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 0.3, 0);
+    controls.target.set(0, 0.0, 0);
     controls.update();
 
     const video = document.createElement("video");
-    video.src = "video1.mp4";
+    video.src = "video.mp4";
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
@@ -363,7 +402,7 @@ function init() {
 
     uniforms = {
         uTexture: { value: texture },
-        uHeightScale: { value: 1.0 },
+        uHeightScale: { value: 0.2 },
         uChannel: { value: 0 },
         uColorSpace: { value: 0 },
 
@@ -383,12 +422,22 @@ function init() {
     });
 
     const geometry = new THREE.PlaneGeometry(1, 1, 256, 256);
-    geometry.rotateX(-Math.PI / 2);
+    geometry.rotateX(Math.PI / 2);
 
     mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
+    xrRoot.add(mesh);
+    xrRoot.add(light);
+    mesh.rotation.x = -Math.PI / 2; //to make the plane 90 degrees around the X-axis, so that we can see the height variations as well as the screen
+    mesh.position.y = 0;           
+    mesh.position.z = -0.5;            
+    //xrRoot.rotation.x = -Math.PI / 2; 
+    //xrRoot.rotation.z = Math.PI / 2 ; 
+    //xrRoot.rotation.y = Math.PI / 2;
+    
 
     const gui = new GUI();
+    gui.domElement.style.visibility = "hidden";
 
     const params = {
         HeightScale: 1.0,
@@ -495,22 +544,54 @@ function init() {
             "uChannel =", uniforms?.uChannel.value);
     });
 
-    // create the correct initial dropdown
+    guiMesh = new HTMLMesh(gui.domElement);
+
+    camera.add(guiMesh);
+    scene.add(camera);
+
+    // creating the correct initial dropdown for channels based on the default color space
     rebuildChannelController();
 
+    renderer.setAnimationLoop( function () {
+
+    renderer.render( scene, camera );
+    if (guiMesh) guiMesh.material.map.update();
+
+    updateGUIPlacement();
+} );
+
 }
 
-function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
-}
+// function animate() {
+//     requestAnimationFrame(animate);
+//     controls.update();
+//     renderer.render(scene, camera);
+// }
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
+
+function updateGUIPlacement() {
+
+    if (renderer.xr.isPresenting) {
+
+        // VR gui position
+        guiMesh.position.set(-0.7, 0.1, -0.6);
+        guiMesh.rotation.y = 0.6;
+        guiMesh.scale.setScalar(1);
+
+    } else {
+
+        // Desktop gui position
+        guiMesh.position.set(-0.5, 0.3, -1.2);
+        guiMesh.rotation.y = 0;
+        guiMesh.scale.setScalar(1.5);
+    }
+}
+
 </script>
 </body>
 </html>
