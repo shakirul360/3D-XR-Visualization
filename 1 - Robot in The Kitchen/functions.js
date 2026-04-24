@@ -14,8 +14,12 @@ export function createKitchen(scene, renderer, camera, gui) {
         var floormaterial = new THREE.MeshStandardMaterial( {map: floortexture, side: THREE.DoubleSide } );
         const floorplane = new THREE.Mesh( floorgeometry, floormaterial );
         scene.add(floorplane);
+    
+
+        
 
         floorplane.receiveShadow = true;
+        
 
         //creating behind wall to join with floor
         var wallgeometry = new THREE.PlaneGeometry( 3, 3);
@@ -84,6 +88,8 @@ export function createKitchen(scene, renderer, camera, gui) {
         cup.receiveShadow = true;
         cup.castShadow = true;
 
+        
+
         scene.add(cup);
 
         
@@ -129,7 +135,8 @@ export function createRobot(scene, renderer, camera, gui){
       cube.add(robothead);
     
     
-    //right arm group - > groups allow us to move the shoulder and arm together without having to worry about the position of the shoulder and arm separately
+    //right arm group - > groups allow us to move the shoulder and arm together without having to 
+    // ry about the position of the shoulder and arm separately
     const rightArmGroup = new THREE.Group();
         rightArmGroup.position.set(-0.3, 0.1, 0); // shoulder position
         cube.add(rightArmGroup);

@@ -7,7 +7,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=yes"
     />
-    <title>Exercise 2 - Robot</title>
+    <title>Exercise 5 - Robot and Kitchen XR</title>
     <style>
       html,
       body {
@@ -59,7 +59,10 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     //enabling XR on the renderer
-    renderer.xr.enabled = true;
+    const xr = renderer.xr;
+    xr.enabled = true;
+
+    xr.setReferenceSpaceType('local') //setting the reference space to local so that the origin is at the user's starting position  
 
     document.body.appendChild(renderer.domElement);
      // Adding the VR button to the page
@@ -119,9 +122,6 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-
-        camera.position.z = 5; 
-
       const lightFolder = gui.addFolder('Directional Light');
         lightFolder.add(light, 'intensity', 0, 5);
         lightFolder.add(light.position, 'x', -20, 20);
@@ -132,9 +132,16 @@
         ambientLightFolder.add(ambientLight, 'intensity', 0, 1);
     
 
-      
-    createKitchen(scene, renderer, camera,gui); //exercise 1
-    const robot = createRobot(scene, renderer, camera, gui); //exercise 2
+    const world = new THREE.Group();
+    scene.add(world);  
+    // createKitchen(scene, renderer, camera,gui); //exercise 1
+    // const robot = createRobot(scene, renderer, camera, gui); //exercise 2
+
+    createKitchen(world, renderer, camera, gui);
+    const robot = createRobot(world, renderer, camera, gui);
+
+    world.position.set(0, 0, -2);
+    world.rotation.y = 0;
 
     
 
@@ -210,28 +217,37 @@
 //     renderer.render(scene, camera);
 // }
 
-  function render() {
+
+function render() {
     renderer.setAnimationLoop(() => {
-        //animateRobotJoints(robot); // your existing animation
 
-        // Direct Mapping: attach robot hands to controllers
-        const leftPos = new THREE.Vector3();
-        const rightPos = new THREE.Vector3();
+        const dir = new THREE.Vector3(0, 0, -1);
 
-        controller1.getWorldPosition(leftPos);
-        controller2.getWorldPosition(rightPos);
+        // LEFT ARM
+        controller1.getWorldQuaternion(controller1.quaternion);
+        dir.set(0, 0, -1).applyQuaternion(controller1.quaternion);
 
-        // Move robot hands (forearms) to match controllers
-        robot.leftforeArm.position.copy(leftPos);
-        robot.rightforeArm.position.copy(rightPos);
+        robot.leftShoulder.rotation.z = Math.atan2(dir.x, dir.z);
 
-        controls.update();
+        // RIGHT ARM
+        controller2.getWorldQuaternion(controller2.quaternion);
+        dir.set(0, 0, -1).applyQuaternion(controller2.quaternion);
+
+        robot.rightShoulder.rotation.z = Math.atan2(dir.x, dir.z);
+
+        if (!renderer.xr.isPresenting) {
+            controls.update();
+        }
+
         renderer.render(scene, camera);
     });
 }
 
-   
-      camera.position.z = 5;
+    
+      camera.position.set(1, 1, 4);
+
+      scene.add(new THREE.AxesHelper(5));
+      world.add(new THREE.AxesHelper(3));   
 
       render();
      
